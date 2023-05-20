@@ -1,0 +1,86 @@
+\documentclass[12pt]{article}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{url}
+
+\usepackage[a4paper, lmargin=2.7cm, rmargin=2.5cm, bottom=2.5cm, top=2.3cm]{geometry}
+\usepackage{amsmath, amsthm, amssymb}
+\usepackage{graphicx}
+\graphicspath{{Figures/}}
+\usepackage[round]{natbib}
+\usepackage{float}
+
+\usepackage{subcaption}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{claim}[theorem]{Claim}
+\newtheorem{result}[theorem]{Result}
+\newtheorem{counter}[theorem]{Counter Example}
+\theoremstyle{definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{assumption}{Assumption}
+
+%Include Urls
+\usepackage[hidelinks]{hyperref}
+
+\usepackage{xr}
+\externaldocument{./supplementary_arxiv}
+
+\usepackage{../macros/mymacros}
+\usepackage{../macros/packagemacros}
+
+\def\arxiv{1}
+
+\title{Title}
+\author{Samuel Davenport}
+\begin{document}
+	
+\maketitle
+
+%========================================================================
+% Abstract
+%========================================================================
+\begin{abstract}
+	\input{../abstract.tex}
+\end{abstract}
+
+%========================================================================
+% Introduction
+%========================================================================
+\section{Introduction}
+\input{../introduction.tex}
+
+%========================================================================
+% Main document
+%========================================================================
+\input{../main_body.tex}
+
+%========================================================================
+% Discussion
+%========================================================================
+\section{Discussion}
+\input{../discussion.tex}
+
+%========================================================================
+% Acknowledgments
+%========================================================================
+\section*{Acknowledgments}
+\input{../acknowledgements.tex}
+
+%========================================================================
+% Bibliography
+%========================================================================
+\bibliographystyle{plainnat}
+\bibliography{../bibfiles/RFT,../bibfiles/MHT,../bibfiles/Statistics,../bibfiles/TomsPapers,../bibfiles/fMRI,../bibfiles/Books}
+
+%%========================================================================
+%% Appendix
+%%========================================================================
+%\input{../appendix.tex}
+
+\end{document}

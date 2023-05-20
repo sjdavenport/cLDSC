@@ -1,0 +1,232 @@
+\usepackage{letltxmacro}
+\LetLtxMacro{\mdots}{\dotsm}
+
+\newcommand{\hilbx}{\mathcal{H}_{\mathcal{X}}}
+\newcommand{\hilby}{\mathcal{H}_{\mathcal{Y}}}
+\newcommand{\kernel}[2]{k\left( #1, #2 \right)} %2 as two parameters!
+\newcommand{\kx}[2]{k_{\mathcal{X}}\left( #1, #2 \right)}
+\newcommand{\ky}[2]{k_{\mathcal{Y}}\left( #1, #2 \right)}
+
+%Cross covariance operators
+%\newcommand{\cc}[2]{C_{#1#2}}
+%\newcommand{\ccxx}{C_{XX}}
+%\newcommand{\ccxy}{C_{XY}}
+%\newcommand{\ccyx}{C_{YX}}
+%\newcommand{\ccyy}{C_{YY}}
+%
+%\newcommand{\tcc}[2]{\tilde{C}_{#1#2}^{-1}}
+%\newcommand{\tccxx}{\tilde{C}_{XX}^{-1}}
+%\newcommand{\tccxy}{\tilde{C}_{XY}^{-1}}
+%\newcommand{\tccyx}{\tilde{C}_{YX}^{-1}}
+%\newcommand{\tccyy}{\tilde{C}_{YY}^{-1}}
+%
+%\newcommand{\tccs}[2]{\tilde{C}_{#1#2}^{-1/2}}
+%\newcommand{\tccxxs}{\tilde{C}_{XX}^{-1/2}}
+%\newcommand{\tccxys}{\tilde{C}_{XY}^{-1/2}}
+%\newcommand{\tccyxs}{\tilde{C}_{YX}^{-1/2}}
+%\newcommand{\tccyys}{\tilde{C}_{YY}^{-1/2}}
+%
+%\newcommand{\hcc}[2]{\hat{C}_{#1#2}}
+%\newcommand{\hccxx}{\hat{C}_{XX}}
+%\newcommand{\hccxy}{\hat{C}_{XY}}
+%\newcommand{\hccyx}{\hat{C}_{YX}}
+%\newcommand{\hccyy}{\hat{C}_{YY}}
+
+\newcommand{\cc}[2]{\Sigma_{#1#2}}
+\newcommand{\ccxx}{\Sigma_{XX}}
+\newcommand{\ccxy}{\Sigma_{XY}}
+\newcommand{\ccyx}{\Sigma_{YX}}
+\newcommand{\ccyy}{\Sigma_{YY}}
+
+\newcommand{\tcc}[2]{\tilde{\Sigma}_{#1#2}^{-1}}
+\newcommand{\tccxx}{\tilde{\Sigma}_{XX}^{-1}}
+\newcommand{\tccxy}{\tilde{\Sigma}_{XY}^{-1}}
+\newcommand{\tccyx}{\tilde{\Sigma}_{YX}^{-1}}
+\newcommand{\tccyy}{\tilde{\Sigma}_{YY}^{-1}}
+
+\newcommand{\tccs}[2]{\tilde{\Sigma}_{#1#2}^{-1/2}}
+\newcommand{\tccxxs}{\tilde{\Sigma}_{XX}^{-1/2}}
+\newcommand{\tccxys}{\tilde{\Sigma}_{XY}^{-1/2}}
+\newcommand{\tccyxs}{\tilde{\Sigma}_{YX}^{-1/2}}
+\newcommand{\tccyys}{\tilde{\Sigma}_{YY}^{-1/2}}
+
+\newcommand{\hcc}[2]{\hat{\Sigma}_{#1#2}}
+\newcommand{\hccxx}{\hat{\Sigma}_{XX}}
+\newcommand{\hccxy}{\hat{\Sigma}_{XY}}
+\newcommand{\hccyx}{\hat{\Sigma}_{YX}}
+\newcommand{\hccyy}{\hat{\Sigma}_{YY}}
+
+\newcommand{\vv}[2]{V_{#1#2}}
+\newcommand{\vvxx}{V_{XX}}
+\newcommand{\vvxy}{V_{XY}}
+\newcommand{\vvyx}{V_{YX}}
+\newcommand{\vvyy}{V_{YY}}
+
+\newcommand{\hvv}[2]{\hat{V}_{#1#2}}
+\newcommand{\hvvxx}{\hat{V}_{XX}}
+\newcommand{\hvvxy}{\hat{V}_{XY}}
+\newcommand{\hvvyx}{\hat{V}_{YX}}
+\newcommand{\hvvyy}{\hat{V}_{YY}}
+
+\newcommand{\tilk}{\tilde{k}}
+\newcommand{\Hk}{\mathcal{H}_{k}}
+\newcommand{\Htilk}{\mathcal{H}_{\tilde{k}}}
+\newcommand{\till}{\tilde{l}}
+\newcommand{\Hl}{\mathcal{H}_{l}}
+\newcommand{\Htill}{\mathcal{H}_{\tilde{l}}}
+\renewcommand{\bf}{\mathbf{f}}
+\newcommand{\Hkl}{\mathcal{H}_{k}\otimes\mathcal{H}_{l}}
+\newcommand{\Hkk}{\mathcal{H}_{k}\otimes\mathcal{H}_{k}}
+
+\newcommand{\nullperp}[1]{\mathcal{N}\left( #1 \right)^{\perp}}
+\newcommand{\kerperp}[1]{\left(\text{Ker}\,#1 \right)^{\perp}}
+\newcommand{\ranclosed}[1]{\overline{\mathcal{R}\left( #1 \right)}}
+\newcommand{\Imclosed}[1]{\overline{\text{Im}\,#1}}
+\newcommand{\prp}{^{\perp}}
+\newcommand{\prpprp}{^{\perp\perp}}
+
+\newcommand{\pderiv}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\integral}[2]{\int #1 \, d#2}
+\newcommand{\dint}[3]{\int #1 \, d#2 d#3}
+\newcommand{\ddint}[3]{\iint #1 \, d#2 d#3}
+
+\newcommand{\tr}{\text{tr}\,}
+\newcommand{\Ker}{\text{Ker}\,}
+\renewcommand{\Im}{\text{Im}\,}
+
+\renewcommand{\bf}[1]{\boldsymbol{#1}}
+
+\newcommand{\Range}{\text{Range}\,}
+\newcommand{\dom}[1]{\mathcal{D}\left(#1\right)}
+\newcommand{\ran}[1]{\mathcal{R}\left(#1\right)}
+\newcommand{\spn}[1]{\text{span}\left\lbrace #1 \right\rbrace}
+\newcommand{\cspn}[1]{\overline{\text{span}}\left\lbrace #1 \right\rbrace}
+
+\DeclareMathOperator*{\argmax}{argmax}
+\DeclareMathOperator*{\argmin}{argmin}
+\DeclareMathOperator*{\argsup}{argsup}
+\DeclareMathOperator*{\arginf}{arginf}
+
+
+\newcommand\mathdash{\text{\normalfont -}}
+\newcommand{\mybar}[1]{\makebox[0pt]{$\phantom{#1}\overline{\phantom{#1}}$}#1}
+
+\def\ci{\perp\!\!\!\perp}
+
+%Define a subsubsubsection
+%\usepackage{titlesec}
+%\setcounter{secnumdepth}{4}
+%\titleformat{\paragraph}
+%{\normalfont\normalsize\bfseries}{\theparagraph}{1em}{}
+%\titlespacing*{\paragraph}
+%{0pt}{3.25ex plus 1ex minus .2ex}{1.5ex plus .2ex}
+
+%Reduce extra spacing around \left\right brackets!
+\let\originalleft\left
+\let\originalright\right
+\renewcommand{\left}{\mathopen{}\mathclose\bgroup\originalleft}
+\renewcommand{\right}{\aftergroup\egroup\originalright}
+
+%Statistics Operators
+\newcommand{\var}{\text{var}}
+%\newcommand{\Var}{\text{var}}
+\newcommand{\cov}{\text{cov}}
+
+\newcommand{\darb}[1]{1,\dots,#1}
+\newcommand{\dtarb}[2]{#1,\dots,#2}
+\newcommand{\dotsM}{1,\dots,M}
+\newcommand{\dotsMpone}{1,\dots,M+1}
+\newcommand{\dotsMptwo}{1,\dots,M+2}
+\newcommand{\dotsMpthree}{1,\dots,M+3}
+\newcommand{\dotsN}{1,\dots,N}
+\newcommand{\dotsNpone}{1,\dots,N+1}
+\newcommand{\dotsNptwo}{1,\dots,N+2}
+\newcommand{\dotsNpthree}{1,\dots,N+3}
+\newcommand{\dotsn}{1,\dots,n}
+\newcommand{\dotsnpone}{1,\dots,n+1}
+\newcommand{\dotsnptwo}{1,\dots,n+2}
+\newcommand{\dotsnpthree}{1,\dots,n+3}
+\renewcommand{\dotsm}{1,\dots,m}
+\newcommand{\dotsmpone}{1,\dots,m+1}
+\newcommand{\dotsmptwo}{1,\dots,m+2}
+\newcommand{\dotsmpthree}{1,\dots,m+3}
+
+\newcommand{\fn}{\frac{1}{n}}
+\newcommand{\fm}{\frac{1}{m}}
+\newcommand{\fN}{\frac{1}{N}}
+\newcommand{\fM}{\frac{1}{M}}
+\newcommand{\fnpone}{\frac{1}{n+1}}
+\newcommand{\fnarb}[1]{\frac{1}{#1}}
+
+\newcommand{\sm}{\sum_{i = 1}^{m}}
+\newcommand{\sn}{\sum_{i = 1}^{n}}
+\newcommand{\sN}{\sum_{i = 1}^{N}}
+\newcommand{\sM}{\sum_{i = 1}^{M}}
+
+%Convergence
+\newcommand{\conv}{\longrightarrow}
+\newcommand{\convp}{\overset{\mathbb{P}}{\longrightarrow}}
+\newcommand{\convd}{\overset{d}{\longrightarrow}}
+\newcommand{\convas}{\overset{a.s.}{\longrightarrow}}
+\newcommand{\convu}{\overset{u}{\longrightarrow}}
+
+\newcommand{\convup}{\overset{\mathbb{P}}{\implies}}
+\newcommand{\convud}{\overset{d}{\implies}}
+\newcommand{\convuas}{\overset{a.s.}{\implies}}
+
+\newcommand{\eqd}{\overset{d}{=}}
+\newcommand{\iid}{\overset{iid}{\sim}}
+\newcommand{\asn}{\text{ as } n \longrightarrow \infty}
+\newcommand{\asm}{\text{ as } m \longrightarrow \infty}
+\newcommand{\asN}{\text{ as } N \longrightarrow \infty}
+\newcommand{\asM}{\text{ as } M \longrightarrow \infty}
+
+\newcommand{\opA}[2]{\mathop{\vphantom{\int}\mathchoice
+		{\huge\int #1 \, d#2}
+		{\Large\int #1 \, d#2}{\mathrm{A}}{\mathrm{A}}}\displaylimits}
+
+\newcommand{\lproof}{(\Leftarrow)}
+\newcommand{\rproof}{(\Rightarrow)}
+
+%Matrices
+\usepackage{tabstackengine}
+\setstackEOL{;}% row separator
+\setstackTAB{.}% column separator
+\setstacktabbedgap{1ex}% inter-column gap
+\setstackgap{L}{1.0\normalbaselineskip}% inter-row baselineskip
+\let\smatrix\bracketMatrixstack
+\let\pmatrix\parenMatrixstack
+\let\brmatrix\braceMatrixstack
+\let\vmatrix\vertMatrixstack
+\let\Matrix\Matrixstack
+
+%Distributions
+\newcommand{\bern}[1]{\text{Bernoulli}( #1 )}
+\newcommand{\bin}[2]{\text{Binomial}( #1, #2 )}
+\newcommand{\normal}[2]{N\left(  #1,#2  \right)}
+\newcommand{\normalo}[2]{N\left(  #1,#2  \right)}
+\newcommand{\normals}[2]{N\left( #1,#2  \right)}
+
+\newcommand{\ptx}[4][center]{%
+	% [#1]: box anchor: center (default) | 
+	%                 south west | west | north west | north |
+	%                 north east | east | south east | south | 
+	%                 mid west | mid | mid east |
+	%                 base west | base | base east 
+	% #2: horizontal position (fraction of page width)
+	% #3: vertical position (fraction of page height)
+	% #4: content
+	%
+	\tikz[remember picture,overlay,x=\paperwidth,y=\paperheight]{%
+		\node[anchor=#1,inner sep=0pt]
+		at ($(current page.south west)+(#2,#3)$) {#4};
+	}%
+}
+
+%In text commands
+\renewcommand{\|}{$ | $}
+
+\newcommand\indep{\protect\mathpalette{\protect\independenT}{\perp}}
+\def\independenT#1#2{\mathrel{\rlap{$#1#2$}\mkern2mu{#1#2}}}
+
+\allowdisplaybreaks
