@@ -1,0 +1,795 @@
+---
+title: "Compare software runs to manual calculations"
+author: "Anubhav Nikunj Singh Sachan"
+date: '2023-04-25'
+output: 
+  html_document:
+    toc: true
+---
+
+```{r, echo = F}
+knitr::opts_chunk$set(eval = FALSE)
+```
+
+
+We report comparisons of software runs to local runs.
+
+All of this was run separately on the server.
+
+# plink vs lm
+
+After a few QC steps as documented in "Code for QC of the ABCD dataset v2.txt" we ran plink as follows (also documented in "Code for QC of the ABCD dataset v2.txt"):
+
+```{r, eval=F}
+setwd("/space/pong-syn01/1/data/Users/asinghsa/ABCD/ABCD_QC_v2")
+#system("/space/pong-syn01/1/data/Users/asinghsa/plink2_linux_avx2_20230109/plink2 --bfile merged_chroms_3 --pheno /space/pong-syn01/1/data/Users/asinghsa/ABCD/myvars.txt --pheno-name nihtbx_cryst_uncorrected --covar-name HouseholdIncome50K100K HouseholdIncome100K age C1 C2 C3 C4 C5 C6 C7 C8 C9 C10 sexM --covar-variance-standardize --glm hide-covar --out /space/pong-syn01/1/data/Users/asinghsa/ABCD/results/summstats", intern=TRUE)
+
+```
+
+The above code runs a linear regression one at a time per SNP while controlling for household income, 10 PCs (that were previously calculated using a variation that accounts for relatives in the data... PCAir), age and sex.
+
+This produced the file /space/pong-syn01/1/data/Users/asinghsa/ABCD/results/summstats.nihtbx_cryst_uncorrected.glm.linear
+
+We read in the file as follows
+
+```{r, eval = F}
+library(data.table)
+summstats_ABCD = fread("/space/pong-syn01/1/data/Users/asinghsa/ABCD/results/summstats.nihtbx_cryst_uncorrected.glm.linear", data.table = F)
+head(summstats_ABCD)
+```
+
+
+This looks as follows:
+
+```{r, eval = T, echo = F}
+cat("#CHROM    POS          ID REF ALT A1 TEST OBS_CT        BETA       SE
+1      1 727242  rs61769339   G   A  A  ADD   6623  0.04188020 0.156267
+2      1 758351  rs12238997   A   G  G  ADD   6623  0.01424990 0.157862
+3      1 758443  rs61769351   G   C  C  ADD   6623  0.00645065 0.156101
+4      1 770988  rs12029736   A   G  G  ADD   6623  0.02920560 0.109051
+5      1 787290 rs116030099   T   C  C  ADD   6623  0.12268200 0.206360
+6      1 796338  rs58276399   T   C  C  ADD   6623 -0.02665620 0.150786
+      T_STAT        P ERRCODE
+1  0.2680040 0.788704       .
+2  0.0902680 0.928077       .
+3  0.0413236 0.967039       .
+4  0.2678160 0.788850       .
+5  0.5945070 0.552194       .
+6 -0.1767810 0.859686       .")
+```
+
+
+We now try to see if we can replicate these values with "lm". To do so we first subset to some of our SNPs.
+```{r, eval=F}
+setwd("/space/pong-syn01/1/data/Users/asinghsa/ABCD/ABCD_QC_v2")
+system("/space/pong-syn01/1/data/Users/asinghsa/plink_linux_x86_64_20230116/plink --bfile merged_chroms_4  --extract Tests_software_vs_R/SomeSNPsChr1.txt --recodeA --out Tests_software_vs_R/SomeSNPsChr1", intern = TRUE)
+```
+
+We now read in the subset:
+```{r, eval = F}
+SomeSNPsChr1 = fread("/space/pong-syn01/1/data/Users/asinghsa/ABCD/ABCD_QC_v2/Tests_software_vs_R/SomeSNPsChr1.raw", data.table = F)
+```
+
+This looks as follows:
+
+```{r, echo = T, eval = F}
+> str(SomeSNPsChr1)
+'data.frame':   6623 obs. of  12 variables:
+ $ FID          : chr  "NDAR_INV003RTV85" "NDAR_INV007W6H7B" "NDAR_INV00BD7VDC" "NDAR_INV00J52GPG" ...
+ $ IID          : chr  "NDAR_INV003RTV85" "NDAR_INV007W6H7B" "NDAR_INV00BD7VDC" "NDAR_INV00J52GPG" ...
+ $ PAT          : int  0 0 0 0 0 0 0 0 0 0 ...
+ $ MAT          : int  0 0 0 0 0 0 0 0 0 0 ...
+ $ SEX          : int  0 0 0 0 0 0 0 0 0 0 ...
+ $ PHENOTYPE    : int  -9 -9 -9 -9 -9 -9 -9 -9 -9 -9 ...
+ $ rs61769339_A : int  1 1 0 0 0 0 0 0 0 0 ...
+ $ rs12238997_G : int  1 1 0 0 0 0 0 0 0 0 ...
+ $ rs61769351_C : int  1 1 0 0 0 0 0 0 0 0 ...
+ $ rs12029736_G : int  1 1 1 2 1 1 0 0 0 2 ...
+ $ rs116030099_C: int  0 0 1 0 0 1 0 0 0 0 ...
+ $ rs58276399_C : int  1 1 0 0 0 0 1 1 0 0 ...
+```
+
+
+We now read in the file of covariates:
+```{r}
+my_covars = fread("/space/pong-syn01/1/data/Users/asinghsa/ABCD/myvars.txt", data.table = F)
+head(my_covars)
+```
+
+```{r, eval = T, echo = F}
+cat("
+               FID              IID nihtbx_cryst_uncorrected
+1 NDAR_INV003RTV85 NDAR_INV003RTV85                       90
+2 NDAR_INV007W6H7B NDAR_INV007W6H7B                       94
+3 NDAR_INV00BD7VDC NDAR_INV00BD7VDC                       80
+4 NDAR_INV00CY2MDM NDAR_INV00CY2MDM                       86
+5 NDAR_INV00J52GPG NDAR_INV00J52GPG                       92
+6 NDAR_INV00LH735Y NDAR_INV00LH735Y                       81
+  HouseholdIncome50K100K HouseholdIncome100K age           C1           C2
+1                      1                   0 131 -0.006741662 -0.005767616
+2                      0                   1 126 -0.005682323 -0.003587845
+3                      0                   1 112 -0.006547634 -0.005822566
+4                      0                   0 130 -0.005475343 -0.005163539
+5                      0                   0 110 -0.006182101 -0.005975257
+6                      0                   0 109 -0.002482625 -0.001297104
+            C3           C4            C5            C6            C7
+1 -0.001150744 -0.004598520 -0.0026430649  0.0015353571 -3.075704e-04
+2 -0.003074774  0.016889944  0.0061114064  0.0050521560  5.570263e-04
+3 -0.001473123 -0.002121121 -0.0020834103 -0.0010743920 -4.911915e-04
+4 -0.001235584 -0.006964381  0.0008955986  0.0002498328  7.602322e-04
+5 -0.001200196  0.010959150  0.0034722710  0.0077339789 -9.767847e-04
+6  0.001566896  0.012555405  0.0050753725  0.0137895434 -7.337854e-05
+             C8            C9          C10 sexM
+1  0.0001411780  1.314264e-03 -0.001083505    0
+2  0.0013547439 -1.653180e-04 -0.001159364    1
+3  0.0007136104  7.868814e-05 -0.002030712    1
+4  0.0018380086  3.384206e-03 -0.001197087    1
+5  0.0005909028  6.086926e-04 -0.001476996    1
+6 -0.0012882652  1.292484e-03  0.005427379    1")
+```
+
+We merge the files
+
+```{r}
+my_geno_with_covars = merge(SomeSNPsChr1, my_covars, by = c("FID", "IID"))
+```
+
+
+We run a summary of the R lm model
+
+```{r}
+my.lm.summary = summary(lm( nihtbx_cryst_uncorrected ~ rs61769339_A + HouseholdIncome50K100K + HouseholdIncome100K + age + C1 + C2 + C3 + C4 + C5 + C6 + C7 + C8 + C9 + C10 + sexM , data = my_geno_with_covars ))
+
+my.lm.summary
+```
+
+```{r, eval = T, echo = F}
+cat("
+                            Estimate   Std. Error     t value      Pr(>|t|)
+(Intercept)             5.724813e+01  1.167206425  49.0471301  0.000000e+00
+rs61769339_A            4.188017e-02  0.156266796   0.2680043  7.887044e-01
+HouseholdIncome50K100K  2.572101e+00  0.208754461  12.3211784  1.663342e-34
+HouseholdIncome100K     3.805329e+00  0.207200343  18.3654588  1.637074e-73
+age                     2.302051e-01  0.009760159  23.5862091 3.648872e-118
+C1                     -1.609192e+02  8.732400990 -18.4278295  5.478267e-74
+C2                     -4.087619e+01  7.408520826  -5.5174558  3.569880e-08
+C3                     -9.429317e+01  7.578532806 -12.4421404  3.812341e-35
+C4                     -1.013872e+01 17.200127330  -0.5894559  5.555756e-01
+C5                      6.548517e+01 40.345679145   1.6231025  1.046152e-01
+C6                     -9.333355e+00  7.669459673  -1.2169508  2.236664e-01
+C7                      1.835968e+01 30.325023449   0.6054300  5.449141e-01
+C8                      1.989048e+01 22.180949779   0.8967372  3.698918e-01
+C9                     -3.663500e+01 27.445091158  -1.3348470  1.819724e-01
+C10                     2.864077e+00 15.171523421   0.1887798  8.502712e-01
+sexM                    4.164208e-03  0.145480119   0.0286239  9.771654e-01
+")
+```
+
+We see that the P-value and standard error matches with the plink output. The beta value seems to be cutoff by plink (making the last digit 0 always) at its last digit, and the t-value is a bit off, but this could be due to rounding issues.
+
+We tried centering with no intercept. The coefficients matched, but the t-statistics, SEs and p-values don't because R automatically assumes there is one less variable...
+
+```{r}
+# my_geno_with_covars_scaled = as.data.frame(scale(my_geno_with_covars[, c('nihtbx_cryst_uncorrected',  'rs61769339_A',  'HouseholdIncome50K100K',  'HouseholdIncome100K',  'age',  'C1',  'C2',  'C3',  'C4',  'C5',  'C6',  'C7',  'C8',  'C9',  'C10', 'sexM')], center=T, scale = F ))
+# 
+# my.lm.summary.scaled = summary(lm( nihtbx_cryst_uncorrected ~ rs61769339_A + HouseholdIncome50K100K + HouseholdIncome100K + age + C1 + C2 + C3 + C4 + C5 + C6 + C7 + C8 + C9 + C10 + sexM - 1  , data = my_geno_with_covars_scaled))
+# 
+# my.lm.summary.scaled$coefficients
+
+```
+
+
+Conclusion: The lm with intercept and without scaling matches the plink output... so plink is calculating things correctly.
+
+# LDSC software vs manual calculations
+
+
+We extract our subset of SNPs:
+
+```{r}
+mygeno = SomeSNPsChr1[,7:12]
+```
+
+We calculate correlation matrix:
+```{r}
+mycorr = cor(mygeno)
+mycorr
+```
+
+
+```{r, eval = T, echo = F}
+cat(
+  "
+              rs61769339_A rs12238997_G rs61769351_C rs12029736_G rs116030099_C
+rs61769339_A     1.0000000    0.9685836    0.9569861   -0.3302694    -0.1046925
+rs12238997_G     0.9685836    1.0000000    0.9736513   -0.3263259    -0.1055914
+rs61769351_C     0.9569861    0.9736513    1.0000000   -0.3349329    -0.1092001
+rs12029736_G    -0.3302694   -0.3263259   -0.3349329    1.0000000    -0.1970625
+rs116030099_C   -0.1046925   -0.1055914   -0.1092001   -0.1970625     1.0000000
+rs58276399_C     0.8800584    0.8806436    0.8669092   -0.3451012    -0.1086102
+              rs58276399_C
+rs61769339_A     0.8800584
+rs12238997_G     0.8806436
+rs61769351_C     0.8669092
+rs12029736_G    -0.3451012
+rs116030099_C   -0.1086102
+rs58276399_C     1.0000000
+"
+)
+```
+
+
+We create the .bed files for LDSC
+
+
+```{r}
+setwd("/space/pong-syn01/1/data/Users/asinghsa/ABCD/ABCD_QC_v2")
+system("/space/pong-syn01/1/data/Users/asinghsa/plink_linux_x86_64_20230116/plink --bfile merged_chroms_4  --extract Tests_software_vs_R/SomeSNPsChr1.txt --make-bed --out Tests_software_vs_R/SomeSNPsChr1", intern = TRUE)
+```
+
+We run LDSC to calculate the LD-scores:
+
+```{r}
+setwd("/space/pong-syn01/1/data/Users/asinghsa/ABCD/ABCD_QC_v2")
+system("/space/pong-syn01/1/data/Users/asinghsa/Python-2.7.15/python /space/pong-syn01/1/data/Users/asinghsa/ldsc/ldsc.py --bfile Tests_software_vs_R/SomeSNPsChr1 --l2 --ld-wind-kb 240000000000 --yes-really --out Tests_software_vs_R/SomeSNPsChr1_LD_scores")
+```
+
+We reqd in the LDSC scores
+```{r}
+LDScores.SomeSNPsChr1.Software = fread("/space/pong-syn01/1/data/Users/asinghsa/ABCD/ABCD_QC_v2/Tests_software_vs_R/SomeSNPsChr1_LD_scores.l2.ldscore.gz", data.table = F)
+LDScores.SomeSNPsChr1.Software
+```
+
+```{r}
+#   CHR         SNP     BP    L2
+# 1   1  rs61769339 727242 3.748
+# 2   1  rs12238997 758351 3.779
+# 3   1  rs61769351 758443 3.739
+# 4   1  rs12029736 770988 1.485
+# 5   1 rs116030099 787290 1.084
+# 6   1  rs58276399 796338 3.432
+```
+
+```{r}
+sum((cor(mygeno)[,1])^2)
+sum((cor(mygeno)[,2])^2)
+sum((cor(mygeno)[,3])^2)
+sum((cor(mygeno)[,4])^2)
+sum((cor(mygeno)[,5])^2)
+sum((cor(mygeno)[,6])^2)
+```
+
+```{r}
+# > sum((cor(mygeno)[,1])^2)
+# [1] 3.748518
+# > sum((cor(mygeno)[,2])^2)
+# [1] 3.779322
+# > sum((cor(mygeno)[,3])^2)
+# [1] 3.739456
+# > sum((cor(mygeno)[,4])^2)
+# [1] 1.485675
+# > sum((cor(mygeno)[,5])^2)
+# [1] 1.084665
+# > sum((cor(mygeno)[,6])^2)
+# [1] 3.432458
+```
+
+This matches with the LD-scores calculated by the software except for the last decimal place which might just be truncated in the LD-score software.
+
+# Covariate adjusted LDSC software vs manual calculations
+
+We read in our covariates
+
+```{r}
+my_covars = fread("/space/pong-syn01/1/data/Users/asinghsa/ABCD/ABCD_QC_v2/mycovars_scaled.txt", data.table = F)
+colnames(my_covars) = c("FID", "IID", paste0("MYVAR", 1:(NCOL(my_covars) - 2) ) )
+```
+
+We first run the cov-adjusted LDSC software
+
+```{r}
+setwd("/space/pong-syn01/1/data/Users/asinghsa/ABCD/ABCD_QC_v2")
+mygenofile.covldsc = "Tests_software_vs_R/SomeSNPsChr1"
+myoutputfile.covldsc = "Tests_software_vs_R/SomeSNPsChr1_LD_scores_covadjusted"
+mycovarfile.covldsc = "mycovars_scaled.txt"
+
+mycommand = paste0("/space/pong-syn01/1/data/Users/asinghsa/Python-2.7.15/python /space/pong-syn01/1/data/Users/asinghsa/cov-ldsc/ldsc.py --bfile ", mygenofile.covldsc," --l2 --ld-wind-kb 240000000000 --yes-really --cov ", mycovarfile.covldsc, " --out ", myoutputfile.covldsc);
+system(mycommand)
+```
+
+We printout the results
+```{r}
+LDScores.SomeSNPsChr1.Software.covadjusted = fread("/space/pong-syn01/1/data/Users/asinghsa/ABCD/ABCD_QC_v2/Tests_software_vs_R/SomeSNPsChr1_LD_scores_covadjusted.l2.ldscore.gz", data.table = F)
+LDScores.SomeSNPsChr1.Software.covadjusted
+```
+
+```{r}
+# > LDScores.SomeSNPsChr1.Software.covadjusted
+#   CHR         SNP     BP    L2
+# 1   1  rs61769339 727242 4.413
+# 2   1  rs12238997 758351 4.427
+# 3   1  rs61769351 758443 4.592
+# 4   1  rs12029736 770988 3.756
+# 5   1 rs116030099 787290 2.926
+# 6   1  rs58276399 796338 4.101
+```
+
+
+
+We calculate things manually:
+```{r}
+SNPs_to_keep = colnames(SomeSNPsChr1)[7:NCOL(SomeSNPsChr1)]
+
+SomeSNPsChr1_subset = SomeSNPsChr1[, c(colnames(SomeSNPsChr1)[1:6], SNPs_to_keep) ]
+SomeSNPsChr1_subset_with_covars = merge(SomeSNPsChr1_subset, my_covars, by=c("FID", "IID"))
+
+# Residualize SNPs
+library(parallel)
+my_i_list = SNPs_to_keep
+small_genos_residualized=mclapply(my_i_list, function(i) lm( SomeSNPsChr1_subset_with_covars[,i] ~ as.matrix(SomeSNPsChr1_subset_with_covars[,c('MYVAR1', 'MYVAR2', 'MYVAR3', 'MYVAR4', 'MYVAR5', 'MYVAR6', 'MYVAR7', 'MYVAR8', 'MYVAR9', 'MYVAR10', 'MYVAR11', 'MYVAR12', 'MYVAR13', 'MYVAR14')]))$residuals, mc.cores = 20) 
+
+mygeno_residualized = do.call(cbind, small_genos_residualized)
+mycorr_residualized = cor(as.matrix(as.matrix(mygeno_residualized)))
+```
+
+```{r}
+sum((cor(mygeno_residualized)[,1])^2)
+sum((cor(mygeno_residualized)[,2])^2)
+sum((cor(mygeno_residualized)[,3])^2)
+sum((cor(mygeno_residualized)[,4])^2)
+sum((cor(mygeno_residualized)[,5])^2)
+sum((cor(mygeno_residualized)[,6])^2)
+```
+
+```{r}
+# > sum((cor(mygeno_residualized)[,1])^2)
+# [1] 3.741686
+# > sum((cor(mygeno_residualized)[,2])^2)
+# [1] 3.772417
+# > sum((cor(mygeno_residualized)[,3])^2)
+# sum([1] 3.728152
+# > sum((cor(mygeno_residualized)[,4])^2)
+# [1] 1.498596
+# > sum((cor(mygeno_residualized)[,5])^2)
+# [1] 1.11583
+# > sum((cor(mygeno_residualized)[,6])^2)
+# [1] 3.444542
+```
+
+We see that the manually calculated covariate adjusted LD-scores don't match with the software, and in fact have a smaller magnitude...
+
+We use an alternative calculation. Projection.mat doesn't assume covariates are orthogonal. Projection.mat.wrong wrongly assumes covariates are orthogonal (this would be OK if the covariates were only traditional principal components calculated from our data).
+
+```{r}
+mygeno.mat = as.matrix(SomeSNPsChr1_subset_with_covars[,SNPs_to_keep])
+mycovar.mat = cbind(1,as.matrix(SomeSNPsChr1_subset_with_covars[,c('MYVAR1', 'MYVAR2', 'MYVAR3', 'MYVAR4', 'MYVAR5', 'MYVAR6', 'MYVAR7', 'MYVAR8', 'MYVAR9', 'MYVAR10', 'MYVAR11', 'MYVAR12', 'MYVAR13', 'MYVAR14')]))
+my.Projection.mat = diag(NROW(mycovar.mat)) - mycovar.mat %*% solve(t(mycovar.mat) %*% mycovar.mat) %*% t(mycovar.mat)
+my.Projection.mat.wrong =  diag(NROW(mycovar.mat)) - mycovar.mat %*% t(mycovar.mat)
+
+my_geno_residualized_Projection.mat = my.Projection.mat %*% (mygeno.mat)
+my_geno_residualized_Projection.mat.wrong = my.Projection.mat.wrong %*% (mygeno.mat)
+```
+
+We see that the following matches with our previous manual calculation:
+
+```{r}
+sum((cor(my_geno_residualized_Projection.mat)[,1])^2)
+sum((cor(my_geno_residualized_Projection.mat)[,2])^2)
+sum((cor(my_geno_residualized_Projection.mat)[,3])^2)
+sum((cor(my_geno_residualized_Projection.mat)[,4])^2)
+sum((cor(my_geno_residualized_Projection.mat)[,5])^2)
+sum((cor(my_geno_residualized_Projection.mat)[,6])^2)
+```
+
+```{r}
+# > sum((cor(my_geno_residualized_Projection.mat)[,1])^2)
+# [1] 3.741686
+# > sum((cor(my_geno_residualized_Projection.mat)[,2])^2)
+# [1] 3.772417
+# > sum((cor(my_geno_residualized_Projection.mat)[,3])^2)
+# [1] 3.728152
+# > sum((cor(my_geno_residualized_Projection.mat)[,4])^2)
+# [1] 1.498596
+# > sum((cor(my_geno_residualized_Projection.mat)[,5])^2)
+# [1] 1.11583
+# > sum((cor(my_geno_residualized_Projection.mat)[,6])^2)
+# [1] 3.444542
+```
+
+We see that the following matches with the software calculation:
+```{r}
+sum((cor(my_geno_residualized_Projection.mat.wrong)[,1])^2)
+sum((cor(my_geno_residualized_Projection.mat.wrong)[,2])^2)
+sum((cor(my_geno_residualized_Projection.mat.wrong)[,3])^2)
+sum((cor(my_geno_residualized_Projection.mat.wrong)[,4])^2)
+sum((cor(my_geno_residualized_Projection.mat.wrong)[,5])^2)
+sum((cor(my_geno_residualized_Projection.mat.wrong)[,6])^2)
+```
+
+```{r}
+# > sum((cor(my_geno_residualized_Projection.mat.wrong)[,1])^2)
+# [1] 4.412979
+# > sum((cor(my_geno_residualized_Projection.mat.wrong)[,2])^2)
+# [1] 4.427492
+# > sum((cor(my_geno_residualized_Projection.mat.wrong)[,3])^2)
+# (cor(my[1] 4.592413
+# > sum((cor(my_geno_residualized_Projection.mat.wrong)[,4])^2)
+# [1] 3.756682
+# > sum((cor(my_geno_residualized_Projection.mat.wrong)[,5])^2)
+# [1] 2.926094
+# > sum((cor(my_geno_residualized_Projection.mat.wrong)[,6])^2)
+# [1] 4.101261
+```
+
+Conclusion: Since our covariates are not orthogonal we should not use the software to calculate covariate-adjusted LD scores (at least any version before April 2023).
+
+# Check if centering produces similar residualized genotypes
+
+```{r}
+mygeno.mat.v2 = scale(SomeSNPsChr1_subset_with_covars[,SNPs_to_keep], scale = F)
+mycovar.mat.v2 = cbind(as.matrix(SomeSNPsChr1_subset_with_covars[,c('MYVAR1', 'MYVAR2', 'MYVAR3', 'MYVAR4', 'MYVAR5', 'MYVAR6', 'MYVAR7', 'MYVAR8', 'MYVAR9', 'MYVAR10', 'MYVAR11', 'MYVAR12', 'MYVAR13', 'MYVAR14')]))
+my.Projection.mat.v2 = diag(NROW(mycovar.mat.v2)) - mycovar.mat.v2 %*% solve(t(mycovar.mat.v2) %*% mycovar.mat.v2) %*% t(mycovar.mat.v2)
+my_geno_residualized_Projection.mat.v2 = my.Projection.mat.v2 %*% (mygeno.mat.v2)
+
+str(my_geno_residualized_Projection.mat.v2)
+str(mygeno_residualized)
+```
+
+```{r}
+# > str(my_geno_residualized_Projection.mat.v2)
+#  num [1:6623, 1:6] 0.765 0.739 -0.254 -0.236 -0.344 ...
+#  - attr(*, "dimnames")=List of 2
+#   ..$ : NULL
+#   ..$ : chr [1:6] "rs61769339_A" "rs12238997_G" "rs61769351_C" "rs12029736_G" ...
+# > str(mygeno_residualized)
+#  num [1:6623, 1:6] 0.765 0.739 -0.254 -0.236 -0.344 ...
+#  - attr(*, "dimnames")=List of 2
+#   ..$ : chr [1:6623] "1" "2" "3" "4" ...
+#   ..$ : NULL
+```
+
+We see that the residualization produces the same thing.
+
+# Check how the mu2 changes
+
+We now check how the mu2 changes with and witout adjustment. Note: Here we will use a different set of SNPs than in the previous chunks.
+
+Define the calculatemu2 function
+
+```{r}
+Obtain_mu2 = function(S.tilde, m, n){
+  
+  mu2=sum(S.tilde^2)/m - (m-1)/(n-1) 
+  
+  
+  return(mu2)
+}
+```
+
+We read in our summary statistics:
+
+```{r}
+library(data.table)
+
+summstats_ABCD = fread("/space/pong-syn01/1/data/Users/asinghsa/ABCD/results/summstats.nihtbx_cryst_uncorrected.glm.linear", data.table = F)
+
+## We read in our summary statistics
+library(data.table)
+ABCD_sum_stats = fread("/space/pong-syn01/1/data/Users/asinghsa/ABCD/results/summstats.nihtbx_cryst_uncorrected.glm.linear", data.table = F)
+Sniekers_sum_stats = fread("/space/pong-syn01/1/data/Users/asinghsa/Sniekers/sumstats.txt.gz", data.table = F)
+
+## We restrict to SNPs that are common to both datasets
+mySNPsubset = ABCD_sum_stats$ID[ABCD_sum_stats$ID %in% Sniekers_sum_stats$rsid]
+
+ABCD_sum_stats.subset = ABCD_sum_stats[ABCD_sum_stats$ID %in% mySNPsubset,]
+Sniekers_sum_stats.subset = Sniekers_sum_stats[Sniekers_sum_stats$rsid %in% mySNPsubset,]
+```
+
+We read in our dataset with 50,000 SNPs:
+
+```{r}
+setwd("/space/pong-syn01/1/data/Users/asinghsa/ABCD/ABCD_QC_v2")
+ABCD_genos_small= fread("Tests_Sniekers_ABCD/ABCD_small_set.raw", data.table = F)
+```
+
+We read in our covariates
+
+```{r}
+my_covars = fread("/space/pong-syn01/1/data/Users/asinghsa/ABCD/ABCD_QC_v2/mycovars_scaled.txt", data.table = F)
+colnames(my_covars) = c("FID", "IID", paste0("MYVAR", 1:(NCOL(my_covars) - 2) ) )
+```
+
+
+```{r}
+set.seed(1233)
+num_SNPs = 1000
+SNPs_to_keep = sample(colnames(ABCD_genos_small)[7:NCOL(ABCD_genos_small)], num_SNPs)
+
+ABCD_genos_small_subset = ABCD_genos_small[, c(colnames(ABCD_genos_small)[1:6], SNPs_to_keep) ]
+ABCD_genos_small_subset_with_covars = merge(ABCD_genos_small_subset, my_covars, by=c("FID", "IID"))
+
+mygeno = ABCD_genos_small_subset[,SNPs_to_keep]
+mycorr = cor(as.matrix(as.matrix(mygeno)))
+
+# Residualize SNPs
+library(parallel)
+my_i_list = SNPs_to_keep
+small_genos_residualized=mclapply(my_i_list, function(i) lm( ABCD_genos_small_subset_with_covars[,i] ~ as.matrix(ABCD_genos_small_subset_with_covars[,c('MYVAR1', 'MYVAR2', 'MYVAR3', 'MYVAR4', 'MYVAR5', 'MYVAR6', 'MYVAR7', 'MYVAR8', 'MYVAR9', 'MYVAR10', 'MYVAR11', 'MYVAR12', 'MYVAR13', 'MYVAR14')]))$residuals, mc.cores = 20) 
+
+mygeno_residualized = do.call(cbind, small_genos_residualized)
+mycorr_residualized = cor(as.matrix(as.matrix(mygeno_residualized)))
+
+# Calculate mu2
+mu2_not_residualized = Obtain_mu2(mycorr, m = num_SNPs, n = NROW(ABCD_genos_small_subset))
+mu2_residualized = Obtain_mu2(mycorr_residualized, m = num_SNPs, n = NROW(ABCD_genos_small_subset))
+
+mu2_not_residualized
+mu2_residualized
+```
+
+
+
+
+
+## Estimate marginal heritability
+
+Note: The squared u estimate might not be correct here since we have used covariates...
+
+```{r}
+Sniekers.n = 75270
+Sniekers_sum_stats.subset$squared_u = exp(log(Sniekers_sum_stats.subset$Zscore^2) - log( 1 + (Sniekers_sum_stats.subset$Zscore^2)/(Sniekers.n-2) ) + log(Sniekers.n - 1) -log(Sniekers.n -2))
+mean(Sniekers_sum_stats.subset$squared_u)
+
+ABCD.n = 6623
+ABCD_sum_stats.subset$squared_u = exp(log(ABCD_sum_stats.subset$T_STAT^2) - log( 1 + (ABCD_sum_stats.subset$T_STAT^2)/(ABCD.n-2) ) + log(ABCD.n - 1) -log(ABCD.n -2))
+mean(ABCD_sum_stats.subset$squared_u)
+
+### We try to subsample an even smaller subset of SNPs
+mySNPs_small_set =gsub( "_.*", "", SNPs_to_keep)
+
+ABCD_sum_stats.subset_small = ABCD_sum_stats.subset[ABCD_sum_stats.subset$ID %in% mySNPs_small_set,]
+Sniekers_sum_stats.subset_small = Sniekers_sum_stats.subset[Sniekers_sum_stats.subset$rsid %in% mySNPs_small_set,]
+
+
+## Estimated heritability
+Sniekers_small.m = num_SNPs
+ABCD_small.m = num_SNPs
+
+(Sniekers_small.m / Sniekers.n) * (mean(Sniekers_sum_stats.subset_small$squared_u) - 1)/mu2_residualized
+(ABCD_small.m / ABCD.n) * (mean(ABCD_sum_stats.subset_small$squared_u) - 1)/mu2_residualized
+
+```
+
+Next step... get the correlation function to calculate correlations even quicker
+
+
+# Make sure the u-scores calculated from summary statistics match what they should be
+
+We make sure that the u-scores calculated from summary statistics match what they should be...
+
+```{r}
+setwd("/space/pong-syn01/1/data/Users/asinghsa/ABCD/ABCD_QC_v2")
+library(data.table)
+
+summstats_ABCD = fread("/space/pong-syn01/1/data/Users/asinghsa/ABCD/results/summstats.nihtbx_cryst_uncorrected.glm.linear", data.table = F)
+head(summstats_ABCD)
+
+my_covars = fread("/space/pong-syn01/1/data/Users/asinghsa/ABCD/myvars.txt", data.table = F)
+head(my_covars)
+
+SomeSNPsChr1 = fread("/space/pong-syn01/1/data/Users/asinghsa/ABCD/ABCD_QC_v2/Tests_software_vs_R/SomeSNPsChr1.raw", data.table = F)
+
+my_geno_with_covars = merge(SomeSNPsChr1, my_covars, by = c("FID", "IID"))[1:25,] #To get a small set
+
+my.lm.summary = summary(lm( nihtbx_cryst_uncorrected ~ rs61769339_A + HouseholdIncome50K100K + HouseholdIncome100K + age + C1 + C2 + C3 + C4 + C5 + C6 + C7 + C8 + C9 + C10 + sexM , data = my_geno_with_covars ))
+
+```
+
+We now see if things match:
+
+```{r}
+SNPs_to_keep = colnames(SomeSNPsChr1)[7:NCOL(SomeSNPsChr1)]
+
+SomeSNPsChr1_subset = SomeSNPsChr1[, c(colnames(SomeSNPsChr1)[1:6], SNPs_to_keep) ]
+SomeSNPsChr1_subset_with_covars = merge(SomeSNPsChr1_subset, my_covars, by=c("FID", "IID"))[1:25,] 
+
+# Residualize SNPs
+my_i_list = SNPs_to_keep
+small_genos_residualized=lapply(my_i_list, function(i) lm( SomeSNPsChr1_subset_with_covars[,i] ~ HouseholdIncome50K100K + HouseholdIncome100K + age + C1 + C2 + C3 + C4 + C5 + C6 + C7 + C8 + C9 + C10 + sexM , data = SomeSNPsChr1_subset_with_covars)$residuals) 
+
+mygeno_residualized = do.call(cbind, small_genos_residualized)
+mypheno_residualized = lm( nihtbx_cryst_uncorrected ~ HouseholdIncome50K100K + HouseholdIncome100K + age + C1 + C2 + C3 + C4 + C5 + C6 + C7 + C8 + C9 + C10 + sexM , data = SomeSNPsChr1_subset_with_covars)$residuals
+
+# We obtain the u scores (not squared)
+t(scale(mygeno_residualized)) %*%  scale(mypheno_residualized)/ sqrt( NROW(mypheno_residualized) - 1 )
+```
+
+```{r}
+#           [,1]
+# [1,]  2.175161
+# [2,]  2.175161
+# [3,]  2.175161
+# [4,] -1.658682
+# [5,] -2.107070
+# [6,]  1.287188
+```
+
+We obtain the linear regression summary:
+```{r}
+summary(lm(scale(mypheno_residualized) ~ scale(mygeno_residualized[,1]) -1  ) )
+```
+
+```{r}
+# Call:
+# lm(formula = scale(mypheno_residualized) ~ scale(mygeno_residualized[,
+#     1]) - 1)
+# 
+# Residuals:
+#      Min       1Q   Median       3Q      Max
+# -1.77765 -0.71790  0.01029  0.84795  1.57027
+# 
+# Coefficients:
+#                                 Estimate Std. Error t value Pr(>|t|)
+# scale(mygeno_residualized[, 1])   0.4440     0.1829   2.428   0.0231 *
+# ---
+# Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+# 
+# Residual standard error: 0.896 on 24 degrees of freedom
+# Multiple R-squared:  0.1971,    Adjusted R-squared:  0.1637
+# F-statistic: 5.893 on 1 and 24 DF,  p-value: 0.02307
+```
+
+```{r}
+sqrt(NROW(mypheno_residualized) - 1) *  summary(lm(scale(mypheno_residualized) ~ scale(mygeno_residualized[,1]) -1  ) )$coefficients[1,1]
+```
+
+```{r}
+#2.175161
+```
+
+This matches the first manually calculated u-score (not squared)
+
+## Squared u-scores from t-statistics
+
+Obtain the squared u-scores from t-statistic (when fitting residualized univariate regression):
+
+```{r}
+my.t.stat.lm = summary(lm(scale(mypheno_residualized) ~ scale(mygeno_residualized[,1]) -1  ) )$coefficients[1,3]
+ABCD.n = NROW(my_geno_with_covars)
+#my.t.stat = exp(0.5*log(ABCD.n-1) - 0.5*log(ABCD.n) + log(my.t.stat.lm))
+
+my.t.stat = my.t.stat.lm 
+
+#Define the number of variables (the intercept counts as one variable)
+num.vars = 1
+
+exp(log(my.t.stat^2) - log( 1 + (my.t.stat^2)/(ABCD.n-num.vars) ) + log(ABCD.n - 1) -log(ABCD.n -num.vars))
+```
+
+```{r}
+#4.731323
+```
+
+This matches the first squared u score:
+
+```{r}
+(t(scale(mygeno_residualized)) %*%  scale(mypheno_residualized)/ sqrt( NROW(mypheno_residualized) - 1 ))^2
+```
+
+```{r}
+#          [,1]
+# [1,] 4.731323
+# [2,] 4.731323
+# [3,] 4.731323
+# [4,] 2.751225
+# [5,] 4.439744
+# [6,] 1.656854
+```
+
+## Squared u-statistics from t-statistics from a larger linear regression
+
+We now try to get the appropriate squared u-scores from the summary statistics
+
+```{r}
+my.lm.summary = summary(lm( nihtbx_cryst_uncorrected ~ rs61769339_A + HouseholdIncome50K100K  + HouseholdIncome100K + age + C1 + C2 + C3 + C4 + C5 + C6 + C7 + C8 + C9 + C10 + sexM , data = my_geno_with_covars ))
+my.lm.summary$coefficients
+```
+
+```{r}
+#                             Estimate   Std. Error     t value      Pr(>|t|)
+# (Intercept)             5.724813e+01  1.167206425  49.0471301  0.000000e+00
+# rs61769339_A            4.188017e-02  0.156266796   0.2680043  7.887044e-01
+# HouseholdIncome50K100K  2.572101e+00  0.208754461  12.3211784  1.663342e-34
+# HouseholdIncome100K     3.805329e+00  0.207200343  18.3654588  1.637074e-73
+# age                     2.302051e-01  0.009760159  23.5862091 3.648872e-118
+# C1                     -1.609192e+02  8.732400990 -18.4278295  5.478267e-74
+# C2                     -4.087619e+01  7.408520826  -5.5174558  3.569880e-08
+# C3                     -9.429317e+01  7.578532806 -12.4421404  3.812341e-35
+# C4                     -1.013872e+01 17.200127330  -0.5894559  5.555756e-01
+# C5                      6.548517e+01 40.345679145   1.6231025  1.046152e-01
+# C6                     -9.333355e+00  7.669459673  -1.2169508  2.236664e-01
+# C7                      1.835968e+01 30.325023449   0.6054300  5.449141e-01
+# C8                      1.989048e+01 22.180949779   0.8967372  3.698918e-01
+# C9                     -3.663500e+01 27.445091158  -1.3348470  1.819724e-01
+# C10                     2.864077e+00 15.171523421   0.1887798  8.502712e-01
+# sexM                    4.164208e-03  0.145480119   0.0286239  9.771654e-01
+```
+
+```{r}
+my.t.stat.lm = my.lm.summary$coefficients[2,3]
+my.t.stat = my.t.stat.lm
+
+ABCD.n = NROW(my_geno_with_covars)
+
+
+#Define the number of variables (the intercept counts as one variable and so does the genotype)
+num.vars = 16
+
+exp(log(my.t.stat^2) - log( 1 + (my.t.stat^2)/(ABCD.n-num.vars) ) + log(ABCD.n - 1) -log(ABCD.n -num.vars))
+```
+
+```{r}
+#4.731323
+```
+
+This matches the squared u-score
+
+
+# Plink runs vs R with a smaller subset of people
+
+We use a smaller subset of people to see if plink and R still match
+
+```{r, eval=F}
+# Create a file with individuals
+fwrite(my_geno_with_covars[,c("FID", "IID")], file ="/space/pong-syn01/1/data/Users/asinghsa/ABCD/ABCD_QC_v2/Tests_software_vs_R/some_individuals.txt", sep="\t")
+
+# Restrict to 25 individuals 
+setwd("/space/pong-syn01/1/data/Users/asinghsa/ABCD/ABCD_QC_v2")
+system("/space/pong-syn01/1/data/Users/asinghsa/plink_linux_x86_64_20230116/plink --bfile Tests_software_vs_R/SomeSNPsChr1 --keep Tests_software_vs_R/some_individuals.txt --make-bed --out Tests_software_vs_R/SomeSNPsChr1_some_individuals", intern = TRUE)
+
+# We run an association test 
+system("/space/pong-syn01/1/data/Users/asinghsa/plink2_linux_avx2_20230109/plink2 --bfile Tests_software_vs_R/SomeSNPsChr1_some_individuals --pheno /space/pong-syn01/1/data/Users/asinghsa/ABCD/myvars.txt --pheno-name nihtbx_cryst_uncorrected --covar-name HouseholdIncome50K100K HouseholdIncome100K age C1 C2 C3 C4 C5 sexM --covar-variance-standardize --glm hide-covar --out Tests_software_vs_R/SomeSNPsChr1_some_individuals_summstats", intern=TRUE)
+```
+
+This produces a file SomeSNPsChr1_some_individuals_summstats.glm.linear that looks like this:
+
+```{r}
+# #CHROM	POS	ID	REF	ALT	A1	TEST	OBS_CT	BETA	SE	T_STAT	P	ERRCODE
+# 1	727242	rs61769339	G	A	A	ADD	25	3.97065	3.77	1.05322	0.310078	.
+# 1	758351	rs12238997	A	G	G	ADD	25	3.97065	3.77	1.05322	0.310078	.
+# 1	758443	rs61769351	G	C	C	ADD	25	3.97065	3.77	1.05322	0.310078	.
+# 1	770988	rs12029736	G	A	A	ADD	25	1.93425	2.21233	0.874301	0.396705	.
+# 1	787290	rs116030099	T	C	C	ADD	25	-3.46167	3.13556	-1.104	0.288206	.
+# 1	796338	rs58276399	T	C	C	ADD	25	1.41365	2.97421	0.475301	0.641903	.
+```
+
+
+```{r}
+my.lm.summary.v2 = summary(lm( nihtbx_cryst_uncorrected ~ rs61769339_A + HouseholdIncome50K100K  + HouseholdIncome100K + age + C1 + C2 + C3 + C4 + C5 + sexM , data = my_geno_with_covars ))
+my.lm.summary.v2$coefficients
+```
+
+```{r}
+#                            Estimate Std. Error    t value     Pr(>|t|)
+# (Intercept)             104.4121590  22.851209  4.5692181 0.0004373679
+# rs61769339_A              3.9706534   3.770001  1.0532235 0.3100777617
+# HouseholdIncome50K100K   -2.7326139   3.984624 -0.6857896 0.5040447521
+# HouseholdIncome100K      -3.6380983   3.623780 -1.0039513 0.3324396902
+# age                      -0.1336209   0.190211 -0.7024878 0.4938906061
+# C1                     -477.3604360 167.651348 -2.8473403 0.0129175106
+# C2                     -283.8304034 199.794250 -1.4206135 0.1773169262
+# C3                     -437.0156875 179.941686 -2.4286517 0.0292185013
+# C4                      295.1788140 223.607348  1.3200765 0.2079870097
+# C5                       40.8050047 185.713347  0.2197204 0.8292603521
+# sexM                     -3.9421541   2.834332 -1.3908584 0.1859805510
+```
+
+The estimates (beta, std error and t-value) for rs61769339_A match
+
+# To get the Rcode from this markdown file
+
+Run the following in the console:
+
+```{r}
+#knitr::purl("CompareSoftwaretoLocalruns.Rmd")
+```

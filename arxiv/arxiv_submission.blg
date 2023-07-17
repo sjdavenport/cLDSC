@@ -1,0 +1,60 @@
+This is BibTeX, Version 0.99d
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: arxiv_submission.aux
+Reallocating 'name_of_file' (item size: 1) to 9 items.
+The style file: plainnat.bst
+Reallocating 'name_of_file' (item size: 1) to 16 items.
+Reallocating 'name_of_file' (item size: 1) to 16 items.
+Reallocating 'name_of_file' (item size: 1) to 23 items.
+Reallocating 'name_of_file' (item size: 1) to 23 items.
+Reallocating 'name_of_file' (item size: 1) to 21 items.
+Reallocating 'name_of_file' (item size: 1) to 17 items.
+Reallocating 'name_of_file' (item size: 1) to 18 items.
+Database file #1: ../bibfiles/RFT.bib
+Database file #2: ../bibfiles/MHT.bib
+Database file #3: ../bibfiles/Statistics.bib
+Database file #4: ../bibfiles/TomsPapers.bib
+Database file #5: ../bibfiles/Genetics.bib
+Database file #6: ../bibfiles/fMRI.bib
+Database file #7: ../bibfiles/Books.bib
+You've used 1 entry,
+            2773 wiz_defined-function locations,
+            607 strings with 5397 characters,
+and the built_in function-call counts, 889 in all, are:
+= -- 67
+> -- 93
+< -- 0
++ -- 31
+- -- 30
+* -- 92
+:= -- 150
+add.period$ -- 3
+call.type$ -- 1
+change.case$ -- 13
+chr.to.int$ -- 1
+cite$ -- 2
+duplicate$ -- 21
+empty$ -- 42
+format.name$ -- 31
+if$ -- 168
+int.to.chr$ -- 1
+int.to.str$ -- 1
+missing$ -- 1
+newline$ -- 13
+num.names$ -- 4
+pop$ -- 24
+preamble$ -- 1
+purify$ -- 12
+quote$ -- 0
+skip$ -- 23
+stack$ -- 0
+substring$ -- 27
+swap$ -- 1
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 11
+warning$ -- 0
+while$ -- 5
+width$ -- 0
+write$ -- 20

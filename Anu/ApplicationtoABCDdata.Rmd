@@ -1,0 +1,319 @@
+---
+title: "Apply to ABCD dataset"
+author: "Anubhav Nikunj Singh Sachan"
+date: '2023-04-25'
+output: 
+  html_document:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+# We read in our datasets
+
+```{r}
+# We load in the libraries that we plan to use
+library(data.table)
+library(parallel)
+library(qs)
+
+# We set our working directory
+setwd("/space/pong-syn01/1/data/Users/asinghsa/ABCD/ABCD_QC_v2")
+
+# We read in summary statistics
+summstats_ABCD = fread("/space/pong-syn01/1/data/Users/asinghsa/ABCD/results/summstats.nihtbx_cryst_uncorrected.glm.linear", data.table = F)
+
+# We read in a file of covariates
+my_covars = fread("/space/pong-syn01/1/data/Users/asinghsa/ABCD/ABCD_QC_v2/mycovars_scaled.txt", data.table = F)
+
+# Add in column names to the the covariates
+colnames(my_covars) = c("FID", "IID", paste0("MYVAR", 1:(NCOL(my_covars) - 2) ) )
+
+# We read in a file of raw genotypes with 50,000 SNPs
+ABCD_genos_small= fread("Tests_Sniekers_ABCD/ABCD_small_set.raw", data.table = F)
+
+# We restrict ourselves to a smaller set of genotypes
+set.seed(1233)
+#num_SNPs = 1000
+#SNPs_to_keep = sample(colnames(ABCD_genos_small)[7:NCOL(ABCD_genos_small)], num_SNPs)
+SNPs_to_keep = colnames(ABCD_genos_small)[7:NCOL(ABCD_genos_small)]; num_SNPs = NROW(SNPs_to_keep)
+
+ABCD_genos_small_subset = ABCD_genos_small[, c(colnames(ABCD_genos_small)[1:6], SNPs_to_keep) ]
+ABCD_genos_small_subset_with_covars = merge(ABCD_genos_small_subset, my_covars, by=c("FID", "IID"))
+
+# We obtain a genotype matrix
+mygeno = ABCD_genos_small_subset_with_covars[,SNPs_to_keep]
+
+# We obtain a matrix of covariates
+mycovars.mat.scaled = scale(ABCD_genos_small_subset_with_covars[,paste0("MYVAR", 1:(NCOL(my_covars) - 2) )])
+
+# We center and scale the genotype
+mygeno.mat.scaled = scale(mygeno) # Can be parallelized
+
+# We calculate correlation matrix
+if(!file.exists("Tests_Sniekers_ABCD/ABCD_small_set_corr_unadjusted.qs")){
+
+  mycorr = crossprod(mygeno.mat.scaled)/(NROW(mygeno.mat.scaled) -1)  
+  qsave(mycorr, file = "Tests_Sniekers_ABCD/ABCD_small_set_corr_unadjusted.qs")
+}
+
+mycorr = qread("Tests_Sniekers_ABCD/ABCD_small_set_corr_unadjusted.qs", nthreads = (detectCores() - 2))
+
+
+
+## We residualize our SNPs
+
+method1 = F
+
+# Method 1 for residualization
+
+if(method1 == T){
+  
+  ### This method should be faster, but it's not, so it will be tweaked later on...
+  
+# We obtain the projection matrix
+Projection.matrix = diag(NROW(mycovars.mat.scaled)) - mycovars.mat.scaled %*% solve(crossprod(mycovars.mat.scaled)) %*% t(mycovars.mat.scaled)
+
+# We residualize SNPs
+small_genos_residualized=mclapply(1:NCOL(mygeno.mat.scaled), function(i) Projection.matrix%*%mygeno.mat.scaled[,i], mc.cores = (detectCores() - 2)) 
+mygeno.mat.residualized = do.call(cbind, small_genos_residualized)
+
+}
+
+## Method 2 for residualization
+
+if(method1==F){
+  
+my_i_list = SNPs_to_keep
+small_genos_residualized=mclapply(my_i_list, function(i) lm( ABCD_genos_small_subset_with_covars[,i] ~ as.matrix(ABCD_genos_small_subset_with_covars[,c('MYVAR1', 'MYVAR2', 'MYVAR3', 'MYVAR4', 'MYVAR5', 'MYVAR6', 'MYVAR7', 'MYVAR8', 'MYVAR9', 'MYVAR10', 'MYVAR11', 'MYVAR12', 'MYVAR13', 'MYVAR14')]))$residuals, mc.cores = (detectCores() - 2)) 
+mygeno.mat.residualized = do.call(cbind, small_genos_residualized)
+}
+
+# We scale the residualized SNPs
+mygeno.mat.scaled.residualized = scale(mygeno.mat.residualized, center = F ) #Makes it more efficient by saying center = F since residuals will already have mean 0 
+
+# Free up space by deleting unscaled version
+rm(mygeno.mat.residualized); gc()
+
+# Calculate the correlation matrix of residualized SNPs
+if(!file.exists("Tests_Sniekers_ABCD/ABCD_small_set_corr_adjusted.qs")){
+
+  mycorr.residualized = crossprod(mygeno.mat.scaled.residualized)/(NROW(mygeno.mat.scaled.residualized) -1) 
+  qsave(mycorr.residualized, file = "Tests_Sniekers_ABCD/ABCD_small_set_corr_adjusted.qs")
+}
+
+mycorr.residualized = qread("Tests_Sniekers_ABCD/ABCD_small_set_corr_adjusted.qs", nthreads = (detectCores() - 2))
+
+
+
+
+Obtain_mu2 = function(S.tilde, m, n){
+  
+  mu2=sum(S.tilde^2)/m - (m-1)/(n-1) 
+  
+  
+  return(mu2)
+}
+
+
+Obtain_mu3 = function(S.tilde, m, n, mu2){
+  
+  #S2=S.tilde%*%S.tilde
+  S2 = crossprod(S.tilde)
+  mu3=sum(S2*S.tilde)/m-3*(m-1)*mu2/(n-1)-(m-1)*(m-2)/(n-1)^2
+  
+  
+  return(mu3)
+}
+
+mymu2.unadjusted = Obtain_mu2(mycorr, m = num_SNPs, n = NROW(ABCD_genos_small_subset))
+mymu2.adjusted = Obtain_mu2(mycorr.residualized, m = num_SNPs, n = NROW(ABCD_genos_small_subset))
+
+print(mymu2.unadjusted)
+print(mymu2.adjusted)
+
+```
+
+
+```{r}
+# Calculate mu3
+
+print(Sys.time())
+
+if(!file.exists("Tests_Sniekers_ABCD/ABCD_small_set_mu3_adjusted.qs")){
+
+  mymu3.adjusted = Obtain_mu3(mycorr.residualized, m = num_SNPs, n = NROW(ABCD_genos_small_subset), mymu2.adjusted)
+  
+  qsave(mymu3.adjusted, file = "Tests_Sniekers_ABCD/ABCD_small_set_mu3_adjusted.qs")
+}
+
+mymu3.adjusted = qread("Tests_Sniekers_ABCD/ABCD_small_set_mu3_adjusted.qs")
+
+print(Sys.time())
+
+print(mymu3.adjusted)
+
+
+```
+
+
+```{r}
+## We restrict the summary statistics to our SNPs of interest
+
+mySNPs_small_set =gsub( "_.*", "", SNPs_to_keep)
+ABCD_sum_stats.subset = summstats_ABCD[summstats_ABCD$ID %in% mySNPs_small_set,]
+
+ABCD.n = NROW(mygeno.mat.scaled.residualized) #6623
+
+#Define the number of variables (the intercept counts as one variable and so does the SNP... basically add two to the number of covariates from the covar file...)
+num.vars = 16
+
+my.t.stat = ABCD_sum_stats.subset$T_STAT
+ABCD_sum_stats.subset$squared_u = exp(log(my.t.stat^2) - log( 1 + (my.t.stat^2)/(ABCD.n-num.vars) ) + log(ABCD.n - 1) -log(ABCD.n -num.vars))
+mean(ABCD_sum_stats.subset$squared_u)
+
+# Heritability using GWASH
+ABCD_small.m = num_SNPs 
+h2.GWASH.adjusted = (ABCD_small.m / ABCD.n) * (mean(ABCD_sum_stats.subset$squared_u) - 1)/mymu2.adjusted
+
+h2.GWASH.adjusted
+
+# Calculate LD-scores
+ld.scores = rowSums(mycorr.residualized^2)
+ld.scores.df = data.frame(ID = mySNPs_small_set, ld.scores = ld.scores) #make sure this really adds the right SNP name
+
+# Merge the ld scores into the dataframe
+ABCD_sum_stats.subset_with_LDScores = merge(ABCD_sum_stats.subset ,ld.scores.df, by ="ID")
+
+# Heritability with LD-score regression
+#summary(lm(squared_u ~ I(ld.scores* (ABCD.n/ABCD_small.m) - 1) , data = ABCD_sum_stats.subset_with_LDScores)) #This one is not working...use software to see if that helps...
+summary(lm(I(squared_u - 1)~ I(ld.scores* (ABCD.n/ABCD_small.m) -1) + 0, data = ABCD_sum_stats.subset_with_LDScores)) # Gives an estimate of 0.1013
+
+# LDSC without intercept
+summary(lm(I(squared_u)~ I(ld.scores* (ABCD.n/ABCD_small.m) -1), data = ABCD_sum_stats.subset_with_LDScores)) #Gives an estimate of 0.002314
+
+mean(ABCD_sum_stats.subset_with_LDScores$squared_u -1)/mean( (ABCD.n/ABCD_small.m)*ABCD_sum_stats.subset_with_LDScores$ld.scores -1) # Gives an estimate of 0.154287
+
+my.l = (ABCD_sum_stats.subset_with_LDScores$ld.scores* (ABCD.n/ABCD_small.m) -1)
+my.u2 = (ABCD_sum_stats.subset_with_LDScores$squared_u)
+
+(mean(my.u2) - 1)/mean(my.l) # 0.1542387
+
+##https://stats.stackexchange.com/questions/495917/when-will-point-barx-bary-not-go-through-the-regression-line
+
+#####################
+#####################
+
+#SE for GWASH
+
+SE.h2.GWASH.adjusted = sqrt((2/ABCD.n) * (ABCD_small.m/(ABCD.n*mymu2.adjusted) + 2*(mymu3.adjusted/(mymu2.adjusted^2))*h2.GWASH.adjusted - h2.GWASH.adjusted^2))
+
+SE.h2.GWASH.adjusted #0.03588612
+
+
+# CI for GWASH estimator
+
+h2.GWASH.adjusted + SE.h2.GWASH.adjusted*c(-1.96, 1.96)  #[0.08397668,0.22465027]
+
+
+pdf("someplot.pdf"); plot((my.u2 -1), my.l); dev.off()
+
+
+
+# Correlation between slope and intercept for LD-regression model
+
+cov2cor(vcov(lm(I(squared_u)~ I(ld.scores* (ABCD.n/ABCD_small.m) -1), data = ABCD_sum_stats.subset_with_LDScores)))
+
+```
+
+
+
+# Simulation
+
+```{r}
+
+set.seed(434353)
+
+h2.sim = 0.15 #We define the theoretical heritability
+
+num_causal = NCOL(mygeno.mat.scaled.residualized)
+causal_SNPs = 1:num_causal # This isn't very randomized and we are selecting all SNPs... otherwise we have to recalculate mu2
+
+coefficient_SNPs = matrix(rnorm(num_causal))
+Geno_effect = mygeno.mat.scaled.residualized[, causal_SNPs]%*% coefficient_SNPs
+
+h2.numerator.sim = t(coefficient_SNPs) %*% mycorr.residualized %*% coefficient_SNPs
+epsilon.sim = h2.numerator.sim * (1-h2.sim)/h2.sim
+
+
+num_sim =500
+
+GWASH.sim = c()
+LDSC.sim = c()
+
+set.seed(4343531)
+
+for(mysim in 1:num_sim){
+  
+
+myY.sim = Geno_effect + rnorm(NROW(mygeno.mat.scaled.residualized),sd=sqrt(epsilon.sim))
+myY.sim.scaled = scale(myY.sim)
+
+my.u.sim = t(mygeno.mat.scaled.residualized) %*% myY.sim.scaled/sqrt(NROW(mygeno.mat.scaled.residualized)-1)
+
+my.u.sim.squared = (my.u.sim^2)
+  
+#GWASH  
+GWASH.sim[mysim] = (ABCD_small.m / ABCD.n) * (mean(my.u.sim.squared) - 1)/mymu2.adjusted
+
+#LDSC
+LDSC.sim[mysim] = coef(summary(lm(I(my.u.sim.squared - 1)~ I(ld.scores* (ABCD.n/ABCD_small.m) -1) + 0)))[1,1]
+}
+
+
+head(GWASH.sim)
+head(LDSC.sim)
+
+summary(GWASH.sim)
+summary(LDSC.sim)
+
+
+sd(GWASH.sim)
+sd(LDSC.sim)
+
+#cov2cor(vcov(lm(I(my.u.sim.squared - 1)~ I(ld.scores* (ABCD.n/ABCD_small.m) - 1))))
+
+
+## Make histograms of GWASH and LDSC ... overlapping plot...with vertical dash line for the true value
+
+hgA <- hist(GWASH.sim, breaks = 10)
+hgB <- hist(LDSC.sim, breaks = 10)
+
+
+pdf("some_histogram.pdf") 
+
+plot(hgA, col = rgb(0,0,1,1/4), 
+     xlim = range(c(hgA$breaks, hgB$breaks)), 
+     ylim = c(0,max(c(hgA$count, hgB$count))))
+
+plot(hgB, add = TRUE, col = rgb(1,0,0,1/4))
+
+dev.off()
+
+#https://www.dataanalytics.org.uk/plot-two-overlapping-histograms-on-one-chart-in-r/
+#https://stackoverflow.com/questions/3541713/how-to-plot-two-histograms-together-in-r
+
+
+## Make a histogram of GWASH - LDSC ... 
+
+## Scatterplot of GWASH and LDSC with 45 degrees dash line and black dot at (0.15, 0.15)
+## Add red dot at where things sit for us in our dataset
+
+
+```
+
+
