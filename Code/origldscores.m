@@ -26,10 +26,11 @@ end
 
 %%  Main Function Loop
 %--------------------------------------------------------------------------
-lat_data = wfield(n,m);
-FWHM = 100;
-smooth_data = convfield(lat_data, FWHM);
-X = smooth_data.field;
+X = randn(n,m);
+% lat_data = wfield(n,m);
+% FWHM = 100;
+% smooth_data = convfield(lat_data, FWHM);
+% X = smooth_data.field;
 
 X = X - mean(X);
 X = X./std(X,0,1);

@@ -2,93 +2,18 @@
 h2 = 0.4;
 n = 2000;
 m = 2000;
-% m = 100;
 
-% X = randn(n,m);
-% How to generate a realistic X for gwas containing 0,1,2. How to get the
-% probabilities??
-% X = wfield(n,m,'T', 3).field;
-% Make binomial random matrix
-% X = (randn(n,m) > 0.45);
- 
-% X with 0, 1, 2
-% X = (randn(n,m) > 0.45) + (randn(n,m) > 0.45);
-% X = smooth_data.field;
-
-lat_data = wfield(n,m);
-FWHM = 100;
-smooth_data = convfield(lat_data, FWHM);
-X = smooth_data.field;
-
-X = X - mean(X);
-X = X./std(X,0,1);
-
-% iid beta
-beta = ((h2/m)^(1/2))*randn(m,1); % similar to gwash sims, once you normalize
-% Email David about the right form of the write it down
-
-% Actually seems to improve if you makes the betas smooth!
-% FWHM = 30;
-% smooth_prevarscaled_betas = convfield(wfield(m,1), FWHM);
-% global PIloc
-% load([PIloc,'Variance/storevars'], 'allvars')
-% beta = (smooth_prevarscaled_betas.field/sqrt(allvars(FWHM)))*((h2/m)^(1/2));
-
-% beta = randn(m,1);
-e = ((1-h2)^(1/2))*randn(n,1);
-
-phi = X*beta + e;
-
-betahat = zeros(m,1);
-for j = 1:m
-    betahat(j) = X(:,j)'*phi/n; %/norm(X(:,j))^2 consider normalizing the Xs
-end
-
-chi2 = n*betahat.^2;
-
-% %%
-% betahat(j) = X(:,j)'*phi/n/norm(X(:,j))^2;
-
-XXT = X*X';
-
-ldscores = zeros(1,m);
-for j = 1:m
-    loader(j,m, 'Total progress:')
-    ldscores(j) = (1/n^2)*X(:,j)'*XXT*X(:,j);
-end
-
-ldscores_adjusted = ldscores - (m-ldscores)/(n-2);
-
-% Unconstrained ld score regression
-design = [(ldscores_adjusted)'*(n/m), ones(m,1)];
-
-ldsc = (design'*design)^(-1)*design'*chi2;
-ldsc = ldsc(1);
-
-% Ld score regression with the intercept set to 1
-design = [(ldscores_adjusted)'*(n/m)];
-
-ldsc1 = (design'*design)^(-1)*design'*(chi2-1);
-
-% Conditional
-design = [(ldscores*(n/m)-1)'];
-
-cldsc = (design'*design)^(-1)*design'*(chi2-1);
-
-% GWASH (up to O(1/n)) see GWASH supplementary!
-gwash = (mean(chi2) - 1)/mean((ldscores_adjusted*(n/m))');
-
-% condtional GWASH
-% (mean(chi2) - 1)/mean((ldscores*(n/m)-1)')
-
-gwashmn = (mean(chi2) - 1)*(m/n);
-
+[ ldscores_adjusted, ldscores, chi2 ] = origldscores( n, m, h2 );
+[ ldsc_full, ldsc_intercept1, ldsc_conditional, gwash, gwashmn] = ...
+                                h2ests( n, m, ldscores_adjusted, ldscores, chi2 );
+fprintf('\n')
 fprintf('True  | Full LDSC    | LDSC intercept 1  | cLDSC   | GWASH     | GWASH m/n\n')
-if ldsc > 0
-    fprintf('%.2f  |   %.4f     |      %.4f       |  %.4f  | %.4f    | %.4f \n', h2, ldsc, ldsc1, cldsc, gwash, gwashmn)
+if ldsc_full(1) > 0
+    fprintf('%.2f  |   %.4f     |      %.4f       |  %.4f  | %.4f    | %.4f \n', h2, ldsc_full(1), ldsc_intercept1, ldsc_conditional, gwash, gwashmn)
 else
-    fprintf('%.2f  |   %.4f    |      %.4f       |  %.4f  | %.4f    | %.4f \n', h2, ldsc, ldsc1, cldsc, gwash, gwashmn)  
+    fprintf('%.2f  |   %.4f    |      %.4f       |  %.4f  | %.4f    | %.4f \n', h2, ldsc_full(1), ldsc_intercept1, ldsc_conditional, gwash, gwashmn)  
 end
+fprintf('LDSC intercept: %.2f \n' ,ldsc_full(2))
 %% Other sample 
 % Setting this to be 100 whilst setting the original n, m  to be 2000 is an
 % interesting example. Seems to indicate that n2 needs to be used.
@@ -225,3 +150,17 @@ Y = h2*(ldscores - 1) + 1 + 10*randn(nsubj, 1);
 design = [ldscores, ones(nsubj,1)];
 
 (design'*design)^(-1)*design'*Y
+
+%%
+% m = 100;
+
+% X = randn(n,m);
+% How to generate a realistic X for gwas containing 0,1,2. How to get the
+% probabilities??
+% X = wfield(n,m,'T', 3).field;
+% Make binomial random matrix
+% X = (randn(n,m) > 0.45);
+ 
+% X with 0, 1, 2
+% X = (randn(n,m) > 0.45) + (randn(n,m) > 0.45);
+% X = smooth_data.field;
