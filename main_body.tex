@@ -1,14 +1,15 @@
-Let $ Y = X\beta + \epsilon$, where $ Y \in \mathbb{R}^n$ is a vector of phenotypes, $ X \in \mathbb{R}^{n\times m}$ is the matrix of genotypes normalized to be mean zero and variance one 1, $ \beta \in \mathbb{R}^m$ of effect sizes and $ \epsilon \in \mathbb{R}^n$ is the error. In this model we assume that $ \mathbb{E}(\epsilon) = 0  $, $ \var(\epsilon) = (1-h^2)I $, $ \mathbb{E}(\beta)  = 0$ and $  \var(\beta) = (h^2/M)I $, where $ h^2 $ is the heritability. This is the same setting as in  \cite{Bulik2015}, see e.g. the beginning of their supplementary material.\\
+\section{Conditional vs unconditional regression}
+Let $ Y = X\beta + \epsilon$, where $ Y \in \mathbb{R}^n$ is a vector of phenotypes, $ X \in \mathbb{R}^{n\times m}$ is the matrix of genotypes normalized to be mean zero and variance one 1, $ \beta \in \mathbb{R}^m$ of effect sizes and $ \epsilon \in \mathbb{R}^n$ is the error. In this model we assume that $ \mathbb{E}(\epsilon) = 0  $, $ \var(\epsilon) = (1-h^2)I $, $ \mathbb{E}(\beta)  = 0$ and $  \var(\beta) = (h^2/m)I $, where $ h^2 $ is the heritability. This is the same setting as in  \cite{Bulik2015}, see e.g. the beginning of their supplementary material.\\
 
 \noindent For $ 1\leq j \leq m $, let $ X_j $ be the $ j $th column of $ X $ and let $ \hat{\beta}_j = X_j^TY/n $ and set $ u_j = n\hat{\beta}_j^2 $ be the $ \chi^2 $ statistics. Moreover let
 \begin{equation*}
-	l_j = \sum_{k = 1}^m r^2_{jk}  = \sum_{k = 1}^m \mathbb{E}(X_{1j}X_{1k})
+	l_j = \sum_{k = 1}^m r^2_{jk}  = \sum_{k = 1}^m \mathbb{E}(X_{1j}X_{1k})^2
 \end{equation*}
-be the true LD scores. And let 
+be the true LD scores, where $ r_{jk} = \mathbb{E}(X_{1j}X_{1k}) $. Define $ \hat{r}^2_{jk} = \frac{1}{n}\sum_{i = 1}^n X_{ij}X_{ik} $. Then let
 \begin{equation*}
-	\hat{l}_j = X_j^TXX^TX_j/n^2 
+	\hat{l}_j = X_j^TXX^TX_j/n^2 = \sum_{k = 1}^m \hat{r}^2_{jk} 
 \end{equation*}
-be the estimates of the LD scores from the data. Since these may not be directly recorded let $ \tilde{l}_j $ be an estimate of $ l_j $ from an independent reference dataset. 
+be the estimates of the LD scores from the covariate matrix $ X $ corresponding to the original dataset. Since these may not be directly recorded let $ \tilde{l}_j $ be an estimate of $ l_j $ from an independent reference dataset. 
 
 Then as I understand LD score regression fits the linear model (up to regression weightings),
 \begin{equation*}
@@ -36,5 +37,57 @@ with a fixed intercept of $ 1 $ and noise error term $ \eta $ and solve to obtai
 u_j = h^2\left(\frac{n}{m}\tilde{l}_j - 1\right) + 1 + \eta
 \end{equation*} 
 and solve for $ h^2. $ I would have thought a priori that this would do a better job than LD score regression because it tries to target $ \mathbb{E}(u_j|X) $ rather than $ \mathbb{E}(u_j) $. But if not I would like to understand what is better about LD score regression compared to this approach.
+
+\section{Convergence of the LD scores}
+Applying the CLT to the correlation coefficients, we obtain the following lemma.
+\begin{lemma}
+	Suppose that the rows of $ X $ are i.i.d. and standardized, then 
+	\begin{equation*}
+		\frac{n\left(\hat{r}_{jk} - r_{jk}\right)^2}{\var(X_{1j}X_{1k})} \convd \chi^2_1.
+	\end{equation*}
+\end{lemma}
+\begin{proof}
+	By the Lindeberg CLT, since $ \hat{r}_{jk} = \frac{1}{n}\sum_{i = 1}^n X_{ij}X_{ik}, $
+	\begin{equation*}
+		\sqrt{n}(\hat{r}_{jk} - r_{jk}) \convd N(0, \var(X_{1j}X_{1k}) ).
+	\end{equation*}
+	Need to assume that the Lindeberg conditions hold on the products and basically check when that is reasonable. the boundedness of the Xs (before standardization of them will probably be helpful here)
+\end{proof}
+
+\begin{lemma}
+	Let $ \sigma_j $ be the standard deviation of $ (X_{ij})_{1\leq i \leq n} $ before standardization. Then $ X_j = (\tilde{X}_j - \hat{\mu}_j)/\hat{\sigma_j},$ where $ \tilde{X} $ is the original matrix of genotypes (i.e. unstandardized and not demeaned.) Then $ \hat{r}_{jk} $ 
+\end{lemma}
+
+\begin{proposition}
+	Suppose that $ m/n \rightarrow c \in \mathbb{R} $. Suppose further that given $ j \in \lbrace 1, \dots, m\rbrace $, there exists a neighbourhood $ N(j) \subset \lbrace 1, \dots, m\rbrace $ such that $ |N(j)| = o(m) $ and such that $ X_j $ is independent of $ X_k $ for all $ k \not\in N(j) $. Then,
+	\begin{equation*}
+		\hat{l}_j \convd N\left(\sum_{k \in N(j)} r^2_{jk} + c, \right).
+	\end{equation*}
+\end{proposition}
+\begin{proof}
+	The neighbourhood independence property implies that for $ k \not\in N(j), r_{jk} = 0 $. As such
+	\begin{align*}
+		\hat{l}_j = \sum_{k = 1}^m \hat{r}^2_{jk} = \sum_{k \in N(j)} \hat{r}^2_{jk} + \sum_{k \not\in N(j)} \hat{r}^2_{jk} =  \sum_{k \in N(j)} \hat{r}^2_{jk} + \frac{c}{m}\sum_{k \not\in N(j)} n\hat{r}^2_{jk}
+	\end{align*}
+	Conditional on $ X_j $, $ \hat{r}_{jk} $ and $ \hat{r}_{jl} $ are independent for $ l $ and $ k $ sufficiently far apart! Moreover, using the approximation in the supplementary of \cite{Bulik2015}, it follows that $ \mathbb{E}(\hat{r}^2_{jk}) = \frac{1}{n} + O(n^{-2}) $
+	
+	In order to apply the Lindeberg condition, first note that 
+	
+	Now we can write 
+	\begin{equation*}
+		\frac{c}{m}\sum_{k \not\in N(j)} n\hat{r}^2_{jk} = 	\frac{c}{m}\sum_{k \not\in N(j)} n\left(\hat{r}^2_{jk} - \mathbb{E}(\hat{r}^2_{jk})\right) + \frac{c}{m}\sum_{k \not\in N(j)} \left(1 + O(n^{-1})\right)
+	\end{equation*}
+	
+	Now 
+	\begin{equation*}
+	\var\left(\frac{c}{m}\sum_{k \not\in N(j)} n\hat{r}^2_{jk} | X_j\right) = \sum_l \sum_k 
+	\end{equation*}
+	
+	
+\end{proof}
+
+When using a reference sample in which the ratio $ m/n $ is different, this should be corrected for and taken into account in the estimation. Though this effect will be relatively negligible!
+
+
 
 %Worth noting that this approach is asymptotically equivalent to Armin's GWASH estimator, though it has the advantage that it only depends on estimating a single parameter from the reference sample. In particular one needs to calculate $ \frac{1}{m}\sum_{j = 1}^m\left(\frac{n}{m}\hat{l}_j - 1\right) $, which can be estimated by $ \frac{1}{m}\sum_{j = 1}^m\left(\frac{n}{m}\tilde{l}_j - 1\right) $.

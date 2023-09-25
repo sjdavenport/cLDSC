@@ -1,4 +1,4 @@
-function [ ldscores_adjusted, ldscores, chi2 ] = origldscores( n, m, h2 )
+function [ ldscores_adjusted, ldscores, chi2 ] = origldscores( n, m, h2, FWHM, mixratio )
 % NEWFUN
 %--------------------------------------------------------------------------
 % ARGUMENTS
@@ -19,18 +19,26 @@ function [ ldscores_adjusted, ldscores, chi2 ] = origldscores( n, m, h2 )
 
 %%  Add/check optional values
 %--------------------------------------------------------------------------
-if ~exist( 'opt1', 'var' )
+if ~exist( 'FWHM', 'var' )
    % Default value
-   opt1 = 0;
+   FWHM = 0;
+end
+
+if ~exist( 'mixratio', 'var' )
+   % Default value
+   mixratio = 1;
 end
 
 %%  Main Function Loop
 %--------------------------------------------------------------------------
-X = randn(n,m);
-% lat_data = wfield(n,m);
-% FWHM = 100;
-% smooth_data = convfield(lat_data, FWHM);
-% X = smooth_data.field;
+if FWHM == 0
+    X = randn(n,m);
+else
+    nsmooth = floor(mixratio*n);
+    lat_data = wfield(nsmooth,m);
+    smooth_data = convfield(lat_data, FWHM);
+    X = [randn(n-nsmooth,m);smooth_data.field];
+end
 
 X = X - mean(X);
 X = X./std(X,0,1);
@@ -65,7 +73,7 @@ XXT = X*X';
 
 ldscores = zeros(1,m);
 for j = 1:m
-    loader(j,m, 'Total progress:')
+    loader(j,m, 'Computing ldscores:')
     ldscores(j) = (1/n^2)*X(:,j)'*XXT*X(:,j);
 end
 

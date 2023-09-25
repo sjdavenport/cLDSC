@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.24 (MiKTeX 22.3) (preloaded format=pdflatex 2022.7.13)  25 MAY 2023 18:03
+This is pdfTeX, Version 3.141592653-2.6-1.40.24 (MiKTeX 22.3) (preloaded format=pdflatex 2022.7.13)  7 SEP 2023 21:42
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -578,30 +578,38 @@ LaTeX Font Info:    Trying to load font information for U+msb on input line 44.
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
 (../main_body.tex
-Underfull \hbox (badness 10000) in paragraph at lines 1--2
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 27--29
+Underfull \hbox (badness 10000) in paragraph at lines 2--3
 
  []
 
 [1
 
-{C:/Users/12SDa/AppData/Local/MiKTeX/2.9/fonts/map/pdftex/pdftex.map}])
-(arxiv_submission.bbl) [2] (arxiv_submission.aux)
+{C:/Users/12SDa/AppData/Local/MiKTeX/2.9/fonts/map/pdftex/pdftex.map}]
+Underfull \hbox (badness 10000) in paragraph at lines 28--30
+
+ []
+
+
+Overfull \hbox (4.08209pt too wide) in paragraph at lines 62--63
+[]\OT1/cmr/bx/n/12 Proposition 2.3. \OT1/cmr/m/it/12 Sup-pose that $\OML/cmm/m/
+it/12 m=n \OMS/cmsy/m/n/12 ! \OML/cmm/m/it/12 c \OMS/cmsy/m/n/12 2 \U/msb/m/n/1
+2 R$\OT1/cmr/m/it/12 . Sup-pose fur-ther that given $\OML/cmm/m/it/12 j \OMS/cm
+sy/m/n/12 2 f\OT1/cmr/m/n/12 1\OML/cmm/m/it/12 ; [] ; m\OMS/cmsy/m/n/12 g$\OT1/
+cmr/m/it/12 ,
+ []
+
+[2]) (arxiv_submission.bbl) [3] (arxiv_submission.aux)
 Package rerunfilecheck Info: File `arxiv_submission.out' has not changed.
-(rerunfilecheck)             Checksum: D41D8CD98F00B204E9800998ECF8427E;0.
+(rerunfilecheck)             Checksum: 284E839D8790F1BC9099B5BEFA2CD95D;442.
  ) 
 Here is how much of TeX's memory you used:
- 13323 strings out of 478432
- 215611 string characters out of 2837745
+ 13339 strings out of 478432
+ 215757 string characters out of 2837745
  524788 words of memory out of 3000000
- 31457 multiletter control sequences out of 15000+600000
- 478445 words of font info for 63 fonts, out of 8000000 for 9000
+ 31465 multiletter control sequences out of 15000+600000
+ 479453 words of font info for 66 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 72i,11n,77p,641b,434s stack positions out of 10000i,1000n,20000p,200000b,80000s
+ 72i,11n,77p,641b,520s stack positions out of 10000i,1000n,20000p,200000b,80000s
 <C:/Users/12SDa/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts
 /cm/cmbx12.pfb><C:/Users/12SDa/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/pu
 blic/amsfonts/cm/cmex10.pfb><C:/Users/12SDa/AppData/Local/Programs/MiKTeX 2.9/f
@@ -615,9 +623,9 @@ msfonts/cm/cmsy10.pfb><C:/Users/12SDa/AppData/Local/Programs/MiKTeX 2.9/fonts/t
 ype1/public/amsfonts/cm/cmsy8.pfb><C:/Users/12SDa/AppData/Local/Programs/MiKTeX
  2.9/fonts/type1/public/amsfonts/cm/cmti12.pfb><C:/Users/12SDa/AppData/Local/Pr
 ograms/MiKTeX 2.9/fonts/type1/public/amsfonts/symbols/msbm10.pfb>
-Output written on arxiv_submission.pdf (2 pages, 124370 bytes).
+Output written on arxiv_submission.pdf (3 pages, 145052 bytes).
 PDF statistics:
- 77 PDF objects out of 1000 (max. 8388607)
- 5 named destinations out of 1000 (max. 500000)
- 1 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 97 PDF objects out of 1000 (max. 8388607)
+ 11 named destinations out of 1000 (max. 500000)
+ 17 words of extra memory for PDF output out of 10000 (max. 10000000)
 

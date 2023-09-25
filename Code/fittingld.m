@@ -1,11 +1,13 @@
 %%
 h2 = 0.4;
-n = 2000;
+n = 1000;
 m = 2000;
 
-[ ldscores_adjusted, ldscores, chi2 ] = origldscores( n, m, h2 );
+FWHM = 50; mratio = 0.5;
+[ ldscores_adjusted, ldscores, chi2 ] = origldscores( n, m, h2, FWHM, mratio );
 [ ldsc_full, ldsc_intercept1, ldsc_conditional, gwash, gwashmn] = ...
                                 h2ests( n, m, ldscores_adjusted, ldscores, chi2 );
+% add the weighted esimator in here!
 fprintf('\n')
 fprintf('True  | Full LDSC    | LDSC intercept 1  | cLDSC   | GWASH     | GWASH m/n\n')
 if ldsc_full(1) > 0
@@ -14,6 +16,38 @@ else
     fprintf('%.2f  |   %.4f    |      %.4f       |  %.4f  | %.4f    | %.4f \n', h2, ldsc_full(1), ldsc_intercept1, ldsc_conditional, gwash, gwashmn)  
 end
 fprintf('LDSC intercept: %.2f \n' ,ldsc_full(2))
+
+%% Other sample
+n2 = 500;
+FWHM = 5;
+mratio2 = 0.65;
+[ ldscores_othersample_adjusted, ldscores_othersample, chi2_othersample ] = ...
+                                    origldscores( n2, m, h2, FWHM, mratio2 );
+[ ldsc_full, ldsc_intercept1, ldsc_conditional, gwash, gwashmn] = ...
+           h2ests( n2, m, ldscores_othersample_adjusted, ldscores_othersample, chi2_othersample );
+
+fprintf('\n')
+fprintf('True  | Full LDSC    | LDSC intercept 1  | cLDSC   | GWASH     | GWASH m/n\n')
+if ldsc_full(1) > 0
+    fprintf('%.2f  |   %.4f     |      %.4f       |  %.4f  | %.4f    | %.4f \n', h2, ldsc_full(1), ldsc_intercept1, ldsc_conditional, gwash, gwashmn)
+else
+    fprintf('%.2f  |   %.4f    |      %.4f       |  %.4f  | %.4f    | %.4f \n', h2, ldsc_full(1), ldsc_intercept1, ldsc_conditional, gwash, gwashmn)  
+end
+fprintf('LDSC intercept: %.2f \n' ,ldsc_full(2))
+
+%% Using original chi2
+[ ldsc_full, ldsc_intercept1, ldsc_conditional, gwash, gwashmn] = ...
+           h2ests( n, m, ldscores_othersample_adjusted, ldscores_othersample, chi2 );
+
+fprintf('\n')
+fprintf('True  | Full LDSC    | LDSC intercept 1  | cLDSC   | GWASH     | GWASH m/n\n')
+if ldsc_full(1) > 0
+    fprintf('%.2f  |   %.4f     |      %.4f       |  %.4f  | %.4f    | %.4f \n', h2, ldsc_full(1), ldsc_intercept1, ldsc_conditional, gwash, gwashmn)
+else
+    fprintf('%.2f  |   %.4f    |      %.4f       |  %.4f  | %.4f    | %.4f \n', h2, ldsc_full(1), ldsc_intercept1, ldsc_conditional, gwash, gwashmn)  
+end
+fprintf('LDSC intercept: %.2f \n' ,ldsc_full(2))
+
 %% Other sample 
 % Setting this to be 100 whilst setting the original n, m  to be 2000 is an
 % interesting example. Seems to indicate that n2 needs to be used.
@@ -26,7 +60,8 @@ X = randn(n2,m);
 X = X - mean(X);
 X = X./std(X,0,1);
 
-beta = ((h2/m)^(1/2))*randn(m,1); % similar to gwash sims, once you normalize
+% Need to decide whether to recalculate beta here again below!!
+% beta = ((h2/m)^(1/2))*randn(m,1); % similar to gwash sims, once you normalize
 
 % beta = randn(m,1);
 e = ((1-h2)^(1/2))*randn(n2,1);
@@ -72,8 +107,8 @@ gwash = (mean(chi2_othersample) - 1)/mean((ldscores_othersample*(n2/m)-1)')';
 
 gwashmn = (mean(chi2_othersample) - 1)*(m/n2); %This only seems to be correct for Gaussian X, it breaks quite
 
-fprintf('True  | Full LDSC | LDSC intercept 1 |  GWASH   | GWASH m/n\n')
-fprintf('%.4f  |   %.4f    |      %.4f        |  %.4f    | %.4f \n', h2, ldsc, ldsc1, gwash, gwashmn)
+fprintf('True  | Full LDSC | LDSC intercept 1 |  cLDSC  | GWASH   | GWASH m/n\n')
+fprintf('%.4f  |   %.4f    |      %.4f        |  %.4f   |  %.4f   | %.4f \n', h2, ldsc, ldsc1, cldsc, gwash, gwashmn)
 
 %% Estimates for the original sample based on these ldscores
 plot(ldscores_othersample, ldscores, '*')
