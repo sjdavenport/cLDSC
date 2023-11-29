@@ -17,6 +17,6 @@ end
 
 %%
 mean(ldsc_full_store)
-std(ldsc_full_store)/sqrt(nsim)
+1.96*std(ldsc_full_store)/sqrt(nsim)
 mean(ldsc_inter1)
-std(ldsc_inter1)/sqrt(nsim)
+1.96*std(ldsc_inter1)/sqrt(nsim)
