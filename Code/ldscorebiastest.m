@@ -1,4 +1,4 @@
-%%
+%% Computing the bias of the ldscore estimators
 h2 = 0.2;
 n = 500;
 m = 1000;
