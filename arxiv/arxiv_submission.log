@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.24 (MiKTeX 22.3) (preloaded format=pdflatex 2022.7.13)  7 SEP 2023 21:42
+This is pdfTeX, Version 3.141592653-2.6-1.40.24 (MiKTeX 22.3) (preloaded format=pdflatex 2022.7.13)  15 NOV 2023 15:28
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -604,7 +604,7 @@ Package rerunfilecheck Info: File `arxiv_submission.out' has not changed.
  ) 
 Here is how much of TeX's memory you used:
  13339 strings out of 478432
- 215757 string characters out of 2837745
+ 215829 string characters out of 2837745
  524788 words of memory out of 3000000
  31465 multiletter control sequences out of 15000+600000
  479453 words of font info for 66 fonts, out of 8000000 for 9000
@@ -623,7 +623,7 @@ msfonts/cm/cmsy10.pfb><C:/Users/12SDa/AppData/Local/Programs/MiKTeX 2.9/fonts/t
 ype1/public/amsfonts/cm/cmsy8.pfb><C:/Users/12SDa/AppData/Local/Programs/MiKTeX
  2.9/fonts/type1/public/amsfonts/cm/cmti12.pfb><C:/Users/12SDa/AppData/Local/Pr
 ograms/MiKTeX 2.9/fonts/type1/public/amsfonts/symbols/msbm10.pfb>
-Output written on arxiv_submission.pdf (3 pages, 145052 bytes).
+Output written on arxiv_submission.pdf (3 pages, 145533 bytes).
 PDF statistics:
  97 PDF objects out of 1000 (max. 8388607)
  11 named destinations out of 1000 (max. 500000)

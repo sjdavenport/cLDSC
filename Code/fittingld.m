@@ -16,6 +16,7 @@ else
     fprintf('%.2f  |   %.4f    |      %.4f       |  %.4f  | %.4f    | %.4f \n', h2, ldsc_full(1), ldsc_intercept1, ldsc_conditional, gwash, gwashmn)  
 end
 fprintf('LDSC intercept: %.2f \n' ,ldsc_full(2))
+% add the weighted esimator in here!
 
 %% Other sample
 n2 = 500;

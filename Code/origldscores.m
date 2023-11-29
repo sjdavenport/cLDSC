@@ -33,6 +33,15 @@ end
 %--------------------------------------------------------------------------
 if FWHM == 0
     X = randn(n,m);
+elseif FWHM < 1
+    sigma = 1;        % Standard deviation of white noise
+    X = zeros(n,m);
+    for I = 1:n
+        % Generate white noise
+        epsilon = sigma * randn(1, m);
+        % Generate AR(1) process
+        X(I,:) = filter(1, [1, -FWHM], epsilon);
+    end
 else
     nsmooth = floor(mixratio*n);
     lat_data = wfield(nsmooth,m);
